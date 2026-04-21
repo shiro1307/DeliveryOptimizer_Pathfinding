@@ -167,7 +167,9 @@ async function initCity(cityKey) {
       loadLabelData(dataset.labelsPath),
     ]);
     graph = nextGraph;
-    labels = nextLabels.labels;
+    labels = Array.isArray(graph.labels) && graph.labels.length > 0
+      ? graph.labels
+      : nextLabels.labels;
     if (graph.nodes.length < 2) {
       throw new Error("Need at least two nodes to run A*");
     }

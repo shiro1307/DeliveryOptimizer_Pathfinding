@@ -45,6 +45,7 @@ export async function loadGraphData(graphPath, canvasWidth, canvasHeight) {
   const raw = await response.json();
   const nodes = Array.isArray(raw.nodes) ? raw.nodes : [];
   const edges = Array.isArray(raw.edges) ? raw.edges : [];
+  const labels = Array.isArray(raw.labels) ? raw.labels : [];
   if (nodes.length === 0) {
     throw new Error("graph data has no nodes");
   }
@@ -77,6 +78,7 @@ export async function loadGraphData(graphPath, canvasWidth, canvasHeight) {
   return {
     nodes,
     edges,
+    labels,
     nodesById,
     adj,
     bounds,

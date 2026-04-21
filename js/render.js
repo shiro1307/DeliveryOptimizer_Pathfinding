@@ -63,20 +63,75 @@ function bubbleContains(rect, hover) {
 
 function drawPlaceLabels(ctx, graph, labels, camera) {
   if (!labels || labels.length === 0) return;
-  if (camera.scale < 1.35) return;
-  ctx.font = "11px sans-serif";
+  
+  // Compute alpha fades based on camera.scale
+  // Places fade in from 0.3 to 0.7 (staying visible much longer when zoomed out)
+  const placeAlpha = Math.min(1, Math.max(0, (camera.scale - 0.3) / (0.6 - 0.3)));
+  // POIs fade in from 1.2 to 2.2
+  const poiAlpha = Math.min(1, Math.max(0, (camera.scale - 1.2) / (2.2 - 1.2)));
+
+  if (placeAlpha <= 0 && poiAlpha <= 0) return;
+
+  const sorted = [...labels].sort((a, b) => {
+    const ak = a.kind === "place" ? 0 : 1;
+    const bk = b.kind === "place" ? 0 : 1;
+    if (ak !== bk) return ak - bk;
+    return String(a.name).localeCompare(String(b.name));
+  });
+
+  // Dynamically limit the rendering count to declutter when zoomed out
+  const maxPlaces = Math.max(5, Math.floor(10 + (camera.scale - 0.3) * 60));
+  const maxPois = Math.max(0, Math.floor((camera.scale - 0.8) * 80));
+
+  let placesDrawn = 0;
+  let poisDrawn = 0;
+
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  for (let i = 0; i < labels.length; i++) {
-    const l = labels[i];
+
+  for (let i = 0; i < sorted.length; i++) {
+    const l = sorted[i];
+    if (!l || !l.name) continue;
+
+    let targetAlpha = 0;
+    if (l.kind === "place") {
+      if (placesDrawn >= maxPlaces) continue;
+      targetAlpha = placeAlpha;
+      placesDrawn++;
+      ctx.font = "bold 12px sans-serif";
+    } else {
+      if (poisDrawn >= maxPois) continue;
+      targetAlpha = poiAlpha;
+      poisDrawn++;
+      ctx.font = "11px sans-serif";
+    }
+
+    if (targetAlpha <= 0) continue;
+
     const wx = graph.project.offsetX + (l.x - graph.bounds.minX) * graph.project.scale;
     const wyRaw = graph.project.offsetY + (l.y - graph.bounds.minY) * graph.project.scale;
     const wy = graph.canvasHeight - wyRaw;
-    ctx.fillStyle = "rgba(255,255,255,0.88)";
-    ctx.fillRect(wx + 2, wy - 7, ctx.measureText(l.name).width + 6, 14);
+
+    // Convert world coordinates to screen coordinates
+    const sx = wx * camera.scale + camera.tx;
+    const sy = wy * camera.scale + camera.ty;
+
+    ctx.globalAlpha = targetAlpha;
+    
+    // Draw background bubble
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    const metrics = ctx.measureText(l.name);
+    // Add small padding for bold vs normal
+    const pad = l.kind === "place" ? 8 : 6;
+    ctx.fillRect(sx + 2, sy - 7, metrics.width + pad, 14);
+
+    // Draw text
     ctx.fillStyle = COLOR_LABEL;
-    ctx.fillText(l.name, wx + 5, wy);
+    ctx.fillText(l.name, sx + 5, sy);
   }
+  
+  // reset alpha
+  ctx.globalAlpha = 1;
 }
 
 export function drawGraph(ctx, graph, startId, endId, searchState, camera, labels, hoverScreen) {
@@ -102,39 +157,34 @@ export function drawGraph(ctx, graph, startId, endId, searchState, camera, label
   ctx.globalAlpha = 1;
 
   const nodeState = searchState?.nodeState;
-  if (nodeState) {
-    for (const p of graph.projectedNodes) {
-      if (p.id === startId || p.id === endId) continue;
-      const s = nodeState.get(p.id);
-      if (!s || !s.isClosed) continue;
-      drawNodeCircle(ctx, p.sx, p.sy, 3.4 / camera.scale, COLOR_CLOSED);
-    }
-  }
+  for (const p of graph.projectedNodes) {
+    if (p.id === startId || p.id === endId) continue;
+    
+    const s = nodeState?.get(p.id);
+    let color = "rgba(0, 0, 0, 0.4)"; // Normal node matches edge gray
+    let radius = 2.1 / camera.scale;
 
-  if (nodeState) {
-    for (const p of graph.projectedNodes) {
-      if (p.id === startId || p.id === endId) continue;
-      const s = nodeState.get(p.id);
-      if (!s || !s.isOpen || s.isClosed) continue;
-      drawNodeCircle(ctx, p.sx, p.sy, 3.4 / camera.scale, COLOR_OPEN);
+    if (s && s.isClosed) {
+      color = COLOR_CLOSED;
+      radius = 3.4 / camera.scale;
+    } else if (s && s.isOpen) {
+      color = COLOR_OPEN;
+      radius = 3.4 / camera.scale;
     }
+
+    drawNodeCircle(ctx, p.sx, p.sy, radius, color);
   }
 
   drawPathPolyline(ctx, graph, searchState?.path);
-
-  for (const p of graph.projectedNodes) {
-    if (p.id === startId || p.id === endId) continue;
-    drawNodeCircle(ctx, p.sx, p.sy, 2.1 / camera.scale, COLOR_NODE);
-  }
 
   const sp = graph.projectedById.get(startId);
   if (sp) drawNodeCircle(ctx, sp.sx, sp.sy, 5.5 / camera.scale, COLOR_START);
   const ep = graph.projectedById.get(endId);
   if (ep) drawNodeCircle(ctx, ep.sx, ep.sy, 5.5 / camera.scale, COLOR_END);
 
-  drawPlaceLabels(ctx, graph, labels, camera);
-
   ctx.restore();
+
+  drawPlaceLabels(ctx, graph, labels, camera);
 
   let startBubble = null;
   let endBubble = null;
