@@ -30,20 +30,23 @@ function projectNodes(nodes, bounds, canvasWidth, canvasHeight, padding) {
     projectedById.set(n.id, p);
     projectedNodes.push(p);
   }
-  return { projectedById, projectedNodes };
+  return { projectedById, projectedNodes, project: { scale, offsetX, offsetY } };
 }
 
-export async function loadGraphData(canvasWidth, canvasHeight) {
-  const response = await fetch("./graph.json");
+export async function loadGraphData(graphPath, canvasWidth, canvasHeight) {
+  let response = await fetch(graphPath);
   if (!response.ok) {
-    throw new Error(`Failed to load graph.json (${response.status})`);
+    response = await fetch("./graph.json");
+  }
+  if (!response.ok) {
+    throw new Error(`Failed to load graph data (${response.status})`);
   }
 
   const raw = await response.json();
   const nodes = Array.isArray(raw.nodes) ? raw.nodes : [];
   const edges = Array.isArray(raw.edges) ? raw.edges : [];
   if (nodes.length === 0) {
-    throw new Error("graph.json has no nodes");
+    throw new Error("graph data has no nodes");
   }
 
   const nodesById = new Map();
@@ -63,7 +66,7 @@ export async function loadGraphData(canvasWidth, canvasHeight) {
   }
 
   const bounds = computeBounds(nodes);
-  const { projectedById, projectedNodes } = projectNodes(
+  const { projectedById, projectedNodes, project } = projectNodes(
     nodes,
     bounds,
     canvasWidth,
@@ -79,6 +82,7 @@ export async function loadGraphData(canvasWidth, canvasHeight) {
     bounds,
     projectedById,
     projectedNodes,
+    project,
     canvasWidth,
     canvasHeight,
   };

@@ -14,4 +14,6 @@ body {
 #grid-canvas {
   display: block;
   border: 1px solid #333;
+  touch-action: none;
+  cursor: grab;
 }
