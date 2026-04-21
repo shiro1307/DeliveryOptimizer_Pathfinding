@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A* Graph</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="toolbar">
+    <label>
+      Tool:
+      <select id="tool-select">
+        <option value="start">Start position</option>
+        <option value="end">End position</option>
+      </select>
+    </label>
+    <button type="button" id="btn-step">Step</button>
+    <button type="button" id="btn-auto">Auto explore</button>
+    <button type="button" id="btn-reset">Reset search</button>
+  </div>
+  <canvas id="grid-canvas" width="360" height="360"></canvas>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
