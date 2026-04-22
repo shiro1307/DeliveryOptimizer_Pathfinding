@@ -6,7 +6,7 @@ import requests
 
 ox.settings.log_console = True
 
-G = ox.graph_from_point((40.719334957444126, -74.00648314612637), dist=1000, network_type="drive")
+G = ox.graph_from_point((19.092928803770068, 72.9012319187961), dist=1000, network_type="drive")
 ox.plot_graph(G)
 
 

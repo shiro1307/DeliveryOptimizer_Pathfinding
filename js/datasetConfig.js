@@ -6,6 +6,12 @@ export const CITY_DATASETS = [
     labelsPath: "./brasilia.json",  // if labels are in same file, use same path
   },
   {
+    key: "mumbai",
+    name: "Dadar, Mumbai",
+    graphPath: "./mumbai.json",
+    labelsPath: "./mumbai.json",  // if labels are in same file, use same path
+  },
+  {
     key: "pune",
     name: "Pune City",
     graphPath: "./pune_city.json",
